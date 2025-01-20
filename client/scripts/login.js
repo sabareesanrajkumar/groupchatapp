@@ -14,6 +14,7 @@ document
       );
       if (postResponse.status == 200) {
         localStorage.setItem("token", postResponse.data.token);
+        window.location.href = "../views/chatnest.html";
       }
       resetForm(event);
     } catch (err) {

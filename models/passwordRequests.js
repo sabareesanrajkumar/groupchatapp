@@ -1,7 +1,7 @@
 const Sequelize = require("sequelize");
 const sequelize = require("../util/database");
 
-const ForgotPasswordRequests = sequelize.define("forgotPasswordRequests", {
+const passwordRequests = sequelize.define("passwordRequests", {
   id: {
     type: Sequelize.STRING,
     allowNull: false,
@@ -11,4 +11,4 @@ const ForgotPasswordRequests = sequelize.define("forgotPasswordRequests", {
   isActive: Sequelize.BOOLEAN,
 });
 
-module.exports = ForgotPasswordRequests;
+module.exports = passwordRequests;
