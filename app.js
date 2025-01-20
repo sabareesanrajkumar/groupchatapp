@@ -8,8 +8,20 @@ app.use(cors());
 app.use(express.json());
 
 const userRoutes = require("./routes/users");
+const passwordRoutes = require("./routes/password");
 
 app.use("/user", userRoutes);
+app.use("/password", passwordRoutes);
+
+const Users = require("./models/users");
+const passwordRequests = require("./models/passwordRequests");
+
+Users.hasMany(passwordRequests, {
+  foreignKey: "userId",
+});
+passwordRequests.belongsTo(Users, {
+  foreignKey: "userId",
+});
 
 sequelize
   .sync()
