@@ -4,7 +4,7 @@ document
     event.preventDefault();
     document.getElementById("error").innerHTML = "";
     const FormData = {
-      email: event.target.email.value,
+      phoneNumber: event.target.phonenumber.value,
       passWord: event.target.password.value,
     };
     try {
@@ -40,10 +40,11 @@ async function forgotPassword() {
       event.target.email.value = "";
       document.getElementById("forgot-password-form").style.display = "none";
       alert("reset link sent to your mail");
+      window.location.href = "../views/login.html";
     });
 }
 
 function resetForm(event) {
-  event.target.email.value = "";
+  event.target.phonenumber.value = "";
   event.target.password.value = "";
 }
