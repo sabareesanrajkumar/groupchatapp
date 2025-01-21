@@ -9,8 +9,11 @@
 </head>
 <body>
     <div id="sidebar">
-        
+        <div id="sidebar-header">
+            <button id="creategroup">Create Group</button>
+        </div>
     </div>
+
     <div id="chat">
         <div id="header">
             <h4>chat nest</h4>
@@ -18,7 +21,7 @@
         </div>
         <div id="chat-window">
             <div id="chat-header">
-                <p id="chat-name">chat name</p>
+                <p id="chat-name"></p>
             </div>
             <form id="send-chat">
                 <input name="message" placeholder="Type a message">
@@ -26,6 +29,23 @@
             </form>
         </div>
     </div>
+
+    <div id="create-group-modal">
+        <div class="modal-content">
+            <span class="close-modal">&times;</span>
+            <h2>Create a Group</h2>
+            <form id="create-group-form">
+                <label for="group-name">Group Name:</label>
+                <input type="text" id="group-name" required>
+                
+                <label for="group-description">Description:</label>
+                <textarea id="group-description" required></textarea>
+                
+                <button type="submit">Create</button>
+            </form>
+        </div>
+    </div>
+    
     <script src="../scripts/chatNest.js"></script>
     
 </body>
