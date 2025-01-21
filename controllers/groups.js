@@ -36,3 +36,21 @@ exports.getGroups = async (req, res, next) => {
     res.status(500).json({ error: err.message });
   }
 };
+
+exports.checkAdmin = async (req, res, next) => {
+  try {
+    const userId = req.user.id;
+    const groupId = req.params.groupId;
+    const member = await GroupMember.findOne({
+      where: { userId, groupId, role: "admin" },
+    });
+
+    if (member) {
+      return res.status(200).json({ isAdmin: true });
+    } else {
+      return res.status(200).json({ isAdmin: false });
+    }
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};

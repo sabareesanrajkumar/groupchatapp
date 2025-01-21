@@ -22,6 +22,9 @@
         <div id="chat-window">
             <div id="chat-header">
                 <p id="chat-name"></p>
+                <div id="admin-power">
+                    <button id="edit-member">Edit Member</button>
+                </div>
             </div>
             <form id="send-chat">
                 <input name="message" placeholder="Type a message">
@@ -43,6 +46,18 @@
                 
                 <button type="submit">Create</button>
             </form>
+        </div>
+    </div>
+
+    <div id="edit-member-modal" class="modal">
+        <div class="modal-content">
+            <span class="close-edit-modal">&times;</span>
+            <h2>Edit Group Members</h2>
+            <div>
+                <input type="text" id="add-member-phone" placeholder="Enter phone number">
+                <button id="add-member-btn">Add Member</button>
+            </div>
+            <ul id="group-member-list"></ul>
         </div>
     </div>
     

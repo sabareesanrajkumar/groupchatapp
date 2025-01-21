@@ -2,24 +2,26 @@ const express = require("express");
 const router = express.Router();
 
 const authenticationController = require("../middleware/auth");
-const groupController = require("../controllers/groups");
+const adminController = require("../controllers/admin");
 
 router.post(
-  "/creategroup",
+  "/addmember",
   authenticationController.authenticate,
-  groupController.createGroup
+  adminController.addMember
 );
 
 router.get(
-  "/getgroups",
+  "/getmembers/:groupId",
   authenticationController.authenticate,
-  groupController.getGroups
+  adminController.getMembers
 );
 
-router.get(
-  "/checkadmin/:groupId",
+router.post(
+  "/makeadmin",
   authenticationController.authenticate,
-  groupController.checkAdmin
+  adminController.makeAdmin
 );
+
+router.delete("/removemember/:groupId/:userId", adminController.removeMember);
 
 module.exports = router;

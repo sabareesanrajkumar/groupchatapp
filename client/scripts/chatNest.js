@@ -88,13 +88,151 @@ function renderGroups(groupNames) {
     const groupItem = document.createElement("div");
     groupItem.classList.add("group-item");
     groupItem.textContent = groupName;
-    groupItem.dataset.groupId = groupId;
-    groupItem.addEventListener("click", () => {
+
+    groupItem.addEventListener("click", async () => {
       document.getElementById("chat-name").textContent = groupName;
+      document.getElementById("chat-name").dataset.groupId = groupId;
+      const adminResponse = await axios.get(
+        `http://localhost:3000/group/checkadmin/${groupId}`,
+        {
+          headers: { Authorization: token },
+        }
+      );
+      console.log(adminResponse);
+      if (adminResponse.data.isAdmin === true) {
+        document.getElementById("admin-power").style.display = "block";
+      } else {
+        document.getElementById("admin-power").style.display = "none";
+      }
     });
 
     groupList.appendChild(groupItem);
   });
 
   sidebar.appendChild(groupList);
+}
+
+document.getElementById("edit-member").addEventListener("click", openEditModal);
+document
+  .querySelector(".close-edit-modal")
+  .addEventListener("click", closeEditModal);
+
+async function openEditModal() {
+  const groupId = getSelectedGroupId();
+  const members = await fetchGroupMembers(groupId);
+  renderGroupMembers(members, groupId);
+  document.getElementById("edit-member-modal").style.display = "flex";
+}
+
+function closeEditModal() {
+  document.getElementById("edit-member-modal").style.display = "none";
+}
+
+async function fetchGroupMembers(groupId) {
+  try {
+    const response = await axios.get(
+      `http://localhost:3000/admin/getmembers/${groupId}`,
+      { headers: { Authorization: token } }
+    );
+    return response.data;
+  } catch (error) {
+    console.error("Error fetching group members:", error);
+    return [];
+  }
+}
+
+function renderGroupMembers(members, groupId) {
+  const memberList = document.getElementById("group-member-list");
+  memberList.innerHTML = "";
+
+  members.forEach((member) => {
+    const listItem = document.createElement("li");
+    listItem.classList.add("member-item");
+
+    listItem.innerHTML = `
+            <span>${member.userName} (${member.role})</span>
+            <button class="make-admin-btn" data-userid="${member.userId}" data-groupid="${groupId}">Make Admin</button>
+            <button class="remove-member-btn" data-userid="${member.userId}" data-groupid="${groupId}">Remove</button>
+        `;
+
+    memberList.appendChild(listItem);
+  });
+
+  document.querySelectorAll(".make-admin-btn").forEach((btn) => {
+    btn.addEventListener("click", makeAdmin);
+  });
+
+  document.querySelectorAll(".remove-member-btn").forEach((btn) => {
+    btn.addEventListener("click", removeMember);
+  });
+}
+
+document
+  .getElementById("add-member-btn")
+  .addEventListener("click", async () => {
+    const phoneNumber = document.getElementById("add-member-phone").value;
+    const groupId = getSelectedGroupId();
+
+    if (!phoneNumber) {
+      alert("Please enter a phone number.");
+      return;
+    }
+
+    try {
+      const response = await axios.post(
+        `http://localhost:3000/admin/addmember`,
+        { phoneNumber: phoneNumber, groupId: groupId },
+        { headers: { Authorization: token } }
+      );
+
+      if (response.status === 200) {
+        alert("Member added successfully!");
+        document.getElementById("add-member-phone").value = "";
+        openEditModal();
+      } else {
+        alert("User not found.");
+      }
+    } catch (error) {
+      console.error("Error adding member:", error);
+    }
+  });
+
+async function makeAdmin(event) {
+  const userId = event.target.dataset.userid;
+  const groupId = event.target.dataset.groupid;
+  try {
+    const makeAdminResponse = await axios.post(
+      `http://localhost:3000/admin/makeadmin`,
+      { userId: userId, groupId: groupId },
+      { headers: { Authorization: token } }
+    );
+    alert("User is now an admin.");
+    openEditModal();
+  } catch (error) {
+    console.error("Error making admin:", error);
+  }
+}
+
+async function removeMember(event) {
+  const userId = event.target.dataset.userid;
+  const groupId = event.target.dataset.groupid;
+
+  try {
+    const removeMemberResponse = await axios.delete(
+      `http://localhost:3000/admin/removemember/${groupId}/${userId}`
+    );
+    if (removeMemberResponse.status == 200) {
+      alert("User removed from group.");
+      openEditModal();
+    }
+    if (removeMemberResponse.status == 201) {
+      alert("Cannot remove creator from group.");
+    }
+  } catch (error) {
+    console.error("Error removing member:", error);
+  }
+}
+
+function getSelectedGroupId() {
+  return document.getElementById("chat-name").dataset.groupId;
 }

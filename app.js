@@ -10,10 +10,12 @@ app.use(express.json());
 const userRoutes = require("./routes/users");
 const passwordRoutes = require("./routes/password");
 const groupRoutes = require("./routes/groups");
+const adminRoutes = require("./routes/admin");
 
 app.use("/user", userRoutes);
 app.use("/password", passwordRoutes);
 app.use("/group", groupRoutes);
+app.use("/admin", adminRoutes);
 
 const Users = require("./models/users");
 const passwordRequests = require("./models/passwordRequests");
