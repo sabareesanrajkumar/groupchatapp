@@ -104,6 +104,7 @@ function renderGroups(groupNames) {
       } else {
         document.getElementById("admin-power").style.display = "none";
       }
+      getGroupChat(groupId);
     });
 
     groupList.appendChild(groupItem);
@@ -235,4 +236,60 @@ async function removeMember(event) {
 
 function getSelectedGroupId() {
   return document.getElementById("chat-name").dataset.groupId;
+}
+
+const sendForm = document.getElementById("send-chat");
+sendForm.addEventListener("submit", async (event) => {
+  event.preventDefault();
+  const chat = event.target.message.value;
+  const groupId = getSelectedGroupId();
+  const sendChatResponse = await axios.post(
+    `http://localhost:3000/message/send/${groupId}`,
+    { chat },
+    { headers: { Authorization: token } }
+  );
+  if (sendChatResponse.status == 200) {
+    event.target.message.value = "";
+    getGroupChat(groupId);
+  }
+});
+
+async function getGroupChat(groupId) {
+  const getChatResponse = await axios.get(
+    `http://localhost:3000/message/getchat/${groupId}`,
+    { headers: { Authorization: token } }
+  );
+
+  if (getChatResponse.status == 200) {
+    renderGroupChat(
+      getChatResponse.data.groupChat,
+      getChatResponse.data.loggedInUser
+    );
+  }
+}
+
+function renderGroupChat(data, loggedInUser) {
+  console.log(data, loggedInUser);
+  const chatContent = document.getElementById("chat-content");
+  chatContent.innerHTML = "";
+
+  data.forEach((msg) => {
+    const messageElement = document.createElement("div");
+    messageElement.classList.add("message");
+
+    if (msg.userName === loggedInUser) {
+      messageElement.classList.add("sent");
+    } else {
+      messageElement.classList.add("received");
+    }
+
+    messageElement.innerHTML = `
+      <p class="sender">${msg.userName}</p>
+      <p class="text">${msg.message}</p>
+    `;
+
+    chatContent.appendChild(messageElement);
+  });
+
+  chatContent.scrollTop = chatContent.scrollHeight;
 }
