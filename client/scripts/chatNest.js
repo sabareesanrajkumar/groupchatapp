@@ -65,11 +65,9 @@ window.addEventListener("DOMContentLoaded", async () => {
   );
 
   if (getGroupResponse.status === 200) {
-    console.log("groups first", getGroupResponse.data);
     const groupNames = getGroupResponse.data.map((element) => {
       return [element.groupId, element.Group.name];
     });
-    console.log("names", groupNames);
     renderGroups(groupNames);
   }
 });
@@ -117,7 +115,6 @@ function renderGroups(groupNames) {
 
       socket.emit("join-group", groupId);
       socket.on("joined-group", (groupId) => {
-        console.log(`Successfully joined ${groupId}`);
         localStorage.setItem("currentGroupId", groupId);
       });
 
@@ -266,24 +263,31 @@ sendForm.addEventListener("submit", async (event) => {
   event.preventDefault();
   const chat = event.target.message.value;
   const groupId = getSelectedGroupId();
-  socket.emit("send-chat", chat, groupId);
+  const token = localStorage.getItem("token");
+  const sender = localStorage.getItem("loggedInUser");
+  const chatStorageResponse = await axios.post(
+    `http://localhost:3000/message/send/${groupId}`,
+    { chat },
+    { headers: { Authorization: token } }
+  );
+  socket.emit("send-chat", chat, groupId, sender);
   event.target.message.value = "";
 });
 
-function displayNewMessage(message, groupId) {
+function displayNewMessage(message, groupId, sender) {
+  const loggedInUser = localStorage.getItem("loggedInUser");
   const chatContent = document.getElementById("chat-content");
   const messageElement = document.createElement("div");
   messageElement.classList.add("message");
 
-  if ("msg.userName" === "loggedInUser") {
+  if (sender === loggedInUser) {
     messageElement.classList.add("sent");
   } else {
     messageElement.classList.add("received");
-    console.log("REcoeved");
   }
 
   messageElement.innerHTML = `
-      <p class="sender">${"admin"}</p>
+      <p class="sender">${sender}</p>
       <p class="text">${message}</p>
     `;
 
@@ -297,6 +301,7 @@ async function getGroupChat(groupId) {
   );
 
   if (getChatResponse.status == 200) {
+    localStorage.setItem("loggedInUser", getChatResponse.data.loggedInUser);
     renderGroupChat(
       getChatResponse.data.groupChat,
       getChatResponse.data.loggedInUser
@@ -329,7 +334,6 @@ function renderGroupChat(data, loggedInUser) {
   chatContent.scrollTop = chatContent.scrollHeight;
 }
 
-socket.on("receive-chat", (message, groupId) => {
-  console.log("hii receiving sockets");
-  displayNewMessage(message, groupId);
+socket.on("receive-chat", (message, groupId, sender) => {
+  displayNewMessage(message, groupId, sender);
 });

@@ -5,9 +5,7 @@ require("dotenv").config();
 const authenticate = (req, res, next) => {
   try {
     const token = req.header("Authorization");
-
     const user = jwt.verify(token, process.env.JWT_SECRET_KEY);
-
     Users.findByPk(user.userId)
       .then((user) => {
         req.user = user;
@@ -18,9 +16,7 @@ const authenticate = (req, res, next) => {
       });
   } catch (err) {
     console.log(err);
-    return res
-      .status(401)
-      .json({ success: false, message: "authentication error" });
+    return res.status(401).json({ success: false, message: err.message });
   }
 };
 

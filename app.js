@@ -14,24 +14,17 @@ const io = require("socket.io")(5000, {
 io.on("connect", (socket) => {
   socket.on("join-group", (groupId) => {
     socket.join(String(groupId));
-    console.log(`User ${socket.id} joined group ${groupId}`);
     socket.emit("joined-group", groupId);
   });
-  socket.on("send-chat", (message, groupId) => {
-    console.log(`Trying to send message: "${message}" to group: ${groupId}`);
-    console.log("Socket rooms before sending:", socket.rooms);
-
-    // Emit only if the socket is in the room
+  socket.on("send-chat", (message, groupId, sender) => {
     if (socket.rooms.has(groupId)) {
-      io.to(groupId).emit("receive-chat", message, groupId);
-      console.log("Message sent successfully!");
+      io.to(groupId).emit("receive-chat", message, groupId, sender);
     } else {
-      console.log(`🚨 Socket ${socket.id} is NOT in group ${groupId}!`);
+      console.log(`Socket ${socket.id} is NOT in group ${groupId}!`);
     }
   });
   socket.on("leave-group", (groupId) => {
     socket.leave(groupId);
-    console.log(`left group ${groupId}`);
   });
 });
 

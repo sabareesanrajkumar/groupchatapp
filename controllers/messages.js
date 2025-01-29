@@ -7,7 +7,6 @@ exports.sendMessage = async (req, res, next) => {
   try {
     const chat = req.body.chat;
     const userName = req.user.userName;
-
     const newMessage = await Message.create({
       userName,
       groupId: req.params.groupId,
