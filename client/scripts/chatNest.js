@@ -74,6 +74,11 @@ window.addEventListener("DOMContentLoaded", async () => {
   }
 });
 
+let socket = io("http://localhost:5000");
+socket.on("connect", () => {
+  console.log("you're connected");
+});
+
 function renderGroups(groupNames) {
   const sidebar = document.getElementById("sidebar");
   const existingList = document.getElementById("group-list");
@@ -83,12 +88,10 @@ function renderGroups(groupNames) {
 
   const groupList = document.createElement("div");
   groupList.id = "group-list";
-
   groupNames.forEach(([groupId, groupName]) => {
     const groupItem = document.createElement("div");
     groupItem.classList.add("group-item");
     groupItem.textContent = groupName;
-
     groupItem.addEventListener("click", async () => {
       document.getElementById("chat-name").textContent = groupName;
       document.getElementById("chat-name").dataset.groupId = groupId;
@@ -98,6 +101,26 @@ function renderGroups(groupNames) {
           headers: { Authorization: token },
         }
       );
+
+      if (
+        groupId !== localStorage.getItem("currentGroupId") &&
+        localStorage.getItem("currentGroupId") !== null
+      ) {
+        console.log(
+          "left group",
+          localStorage.getItem("currentGroupId"),
+          "and joined",
+          groupId
+        );
+        socket.emit("leave-group", localStorage.getItem("currentGroupId"));
+      }
+
+      socket.emit("join-group", groupId);
+      socket.on("joined-group", (groupId) => {
+        console.log(`Successfully joined ${groupId}`);
+        localStorage.setItem("currentGroupId", groupId);
+      });
+
       console.log(adminResponse);
       if (adminResponse.data.isAdmin === true) {
         document.getElementById("admin-power").style.display = "block";
@@ -243,16 +266,29 @@ sendForm.addEventListener("submit", async (event) => {
   event.preventDefault();
   const chat = event.target.message.value;
   const groupId = getSelectedGroupId();
-  const sendChatResponse = await axios.post(
-    `http://localhost:3000/message/send/${groupId}`,
-    { chat },
-    { headers: { Authorization: token } }
-  );
-  if (sendChatResponse.status == 200) {
-    event.target.message.value = "";
-    getGroupChat(groupId);
-  }
+  socket.emit("send-chat", chat, groupId);
+  event.target.message.value = "";
 });
+
+function displayNewMessage(message, groupId) {
+  const chatContent = document.getElementById("chat-content");
+  const messageElement = document.createElement("div");
+  messageElement.classList.add("message");
+
+  if ("msg.userName" === "loggedInUser") {
+    messageElement.classList.add("sent");
+  } else {
+    messageElement.classList.add("received");
+    console.log("REcoeved");
+  }
+
+  messageElement.innerHTML = `
+      <p class="sender">${"admin"}</p>
+      <p class="text">${message}</p>
+    `;
+
+  chatContent.appendChild(messageElement);
+}
 
 async function getGroupChat(groupId) {
   const getChatResponse = await axios.get(
@@ -269,7 +305,6 @@ async function getGroupChat(groupId) {
 }
 
 function renderGroupChat(data, loggedInUser) {
-  console.log(data, loggedInUser);
   const chatContent = document.getElementById("chat-content");
   chatContent.innerHTML = "";
 
@@ -293,3 +328,8 @@ function renderGroupChat(data, loggedInUser) {
 
   chatContent.scrollTop = chatContent.scrollHeight;
 }
+
+socket.on("receive-chat", (message, groupId) => {
+  console.log("hii receiving sockets");
+  displayNewMessage(message, groupId);
+});

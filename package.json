@@ -8,6 +8,8 @@
     "mysql2": "^3.12.0",
     "sequelize": "^6.37.5",
     "sib-api-v3-sdk": "^8.5.0",
+    "socket.io": "^4.8.1",
+    "socket.io-client": "^4.8.1",
     "uuid": "^11.0.5"
   },
   "scripts": {

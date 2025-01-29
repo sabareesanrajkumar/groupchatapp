@@ -3,9 +3,37 @@ const cors = require("cors");
 const sequelize = require("./util/database");
 
 const app = express();
-
 app.use(cors());
 app.use(express.json());
+
+const io = require("socket.io")(5000, {
+  cors: {
+    origin: ["null"],
+  },
+});
+io.on("connect", (socket) => {
+  socket.on("join-group", (groupId) => {
+    socket.join(String(groupId));
+    console.log(`User ${socket.id} joined group ${groupId}`);
+    socket.emit("joined-group", groupId);
+  });
+  socket.on("send-chat", (message, groupId) => {
+    console.log(`Trying to send message: "${message}" to group: ${groupId}`);
+    console.log("Socket rooms before sending:", socket.rooms);
+
+    // Emit only if the socket is in the room
+    if (socket.rooms.has(groupId)) {
+      io.to(groupId).emit("receive-chat", message, groupId);
+      console.log("Message sent successfully!");
+    } else {
+      console.log(`🚨 Socket ${socket.id} is NOT in group ${groupId}!`);
+    }
+  });
+  socket.on("leave-group", (groupId) => {
+    socket.leave(groupId);
+    console.log(`left group ${groupId}`);
+  });
+});
 
 const userRoutes = require("./routes/users");
 const passwordRoutes = require("./routes/password");
