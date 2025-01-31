@@ -307,6 +307,25 @@ async function getGroupChat(groupId) {
       getChatResponse.data.groupChat,
       getChatResponse.data.loggedInUser
     );
+    addLoadPreviousChatBtn(groupId);
+  }
+}
+
+async function getArchivedGroupChat(groupId) {
+  const getArchivedChatResponse = await axios.get(
+    `http://localhost:3000/message/getarchivedchat/${groupId}`,
+    { headers: { Authorization: token } }
+  );
+
+  if (getArchivedChatResponse.status == 200) {
+    localStorage.setItem(
+      "loggedInUser",
+      getArchivedChatResponse.data.loggedInUser
+    );
+    renderGroupChat(
+      getArchivedChatResponse.data.groupChat,
+      getArchivedChatResponse.data.loggedInUser
+    );
   }
 }
 
@@ -339,6 +358,19 @@ function renderGroupChat(data, loggedInUser) {
   });
 
   chatContent.scrollTop = chatContent.scrollHeight;
+}
+
+function addLoadPreviousChatBtn(groupId) {
+  console.log("adding previous button");
+  const chatContent = document.getElementById("chat-content");
+  const archiveButton = document.createElement("button");
+  archiveButton.innerHTML = "load entire chat";
+  archiveButton.id = "archive-button";
+  archiveButton.addEventListener("click", () => {
+    getArchivedGroupChat(groupId);
+    document.getElementById("archive-button").style.display = "none";
+  });
+  chatContent.prepend(archiveButton);
 }
 
 document.getElementById("send-file-btn").addEventListener("click", () => {

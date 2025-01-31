@@ -290,14 +290,14 @@ body {
 
 
 
-  @media screen and (max-width: 750px) {
-    #sidebar {
-      display: none; 
-    }
-  
-    #chat,#chat-window {
-      margin-left: 0;
-      width: 100%; 
-    }
+#archive-button{
+  all:unset;
+  color:#007bff;
+  justify-content: center;
+  margin: 5px auto;
+}
 
-  }
+#archive-button:hover {
+  text-decoration: underline;
+  color:#0168d7;
+}

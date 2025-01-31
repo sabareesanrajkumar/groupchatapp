@@ -16,4 +16,10 @@ router.get(
   messageController.getChat
 );
 
+router.get(
+  "/getarchivedchat/:groupId",
+  authenticationController.authenticate,
+  messageController.getArchivedChat
+);
+
 module.exports = router;
