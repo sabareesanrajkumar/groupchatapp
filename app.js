@@ -1,10 +1,12 @@
 const express = require("express");
 const cors = require("cors");
 const sequelize = require("./util/database");
-
+const cron = require("node-cron");
 const app = express();
 app.use(cors());
 app.use(express.json());
+const Sequelize = require("sequelize");
+const moment = require("moment-timezone");
 
 const io = require("socket.io")(5000, {
   cors: {
@@ -51,6 +53,7 @@ const passwordRequests = require("./models/passwordRequests");
 const Groups = require("./models/groups");
 const GroupMembers = require("./models/groupMembers");
 const Message = require("./models/messages");
+const archivedMessage = require("./models/archivedMessages");
 
 Users.hasMany(passwordRequests, {
   foreignKey: "userId",
@@ -78,6 +81,48 @@ Groups.hasMany(Message, { foreignKey: "groupId" });
 
 Message.belongsTo(Users, { foreignKey: "userId" });
 Message.belongsTo(Groups, { foreignKey: "groupId" });
+
+Users.hasMany(archivedMessage, { foreignKey: "userId" });
+Groups.hasMany(archivedMessage, { foreignKey: "groupId" });
+
+archivedMessage.belongsTo(Users, { foreignKey: "userId" });
+archivedMessage.belongsTo(Groups, { foreignKey: "groupId" });
+
+cron.schedule("0 0 * * *", async () => {
+  try {
+    console.log("archiving");
+    const todayIST = moment().tz("Asia/Kolkata").startOf("day").toDate();
+    const messagesToArchive = await Message.findAll({
+      where: {
+        createdAt: {
+          [Sequelize.Op.lt]: todayIST,
+        },
+      },
+    });
+
+    if (messagesToArchive.length > 0) {
+      await archivedMessage.bulkCreate(
+        messagesToArchive.map((msg) => ({
+          userName: msg.userName,
+          groupId: msg.groupId,
+          message: msg.message,
+          sentAt: msg.createdAt,
+        }))
+      );
+
+      await Message.destroy({
+        where: {
+          id: {
+            [Sequelize.Op.in]: messagesToArchive.map((msg) => msg.id),
+          },
+        },
+      });
+      console.log(`${messagesToArchive.length} messages archived.`);
+    }
+  } catch (error) {
+    console.error("Error archiving messages:", error);
+  }
+});
 
 sequelize
   .sync()

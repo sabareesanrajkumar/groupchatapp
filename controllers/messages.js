@@ -1,4 +1,5 @@
 const Message = require("../models/messages");
+const archivedMessage = require("../models/archivedMessages");
 const User = require("../models/users");
 const Group = require("../models/groups");
 const GroupMember = require("../models/groupMembers");
@@ -59,9 +60,29 @@ exports.getArchivedChat = async (req, res, next) => {
   try {
     const groupChat = await Message.findAll({
       where: { groupId: req.params.groupId },
-      attributes: ["userName", "message"],
+      attributes: ["userName", "message", "createdAt"],
     });
-    res.status(200).json({ groupChat, loggedInUser: req.user.userName });
+    const archivedGroupChat = await archivedMessage.findAll({
+      where: { groupId: req.params.groupId },
+      attributes: ["userName", "message", "sentAt"],
+    });
+    const mergedChat = [...groupChat, ...archivedGroupChat];
+    const sortedChat = mergedChat.sort((a, b) => {
+      const timeA = new Date(
+        a.createdAt || a.sentAt.replace(" ", "T") + "Z" || 0
+      );
+      const timeB = new Date(
+        b.createdAt || b.sentAt.replace(" ", "T") + "Z" || 0
+      );
+
+      if (isNaN(timeA) || isNaN(timeB)) {
+        return 0;
+      }
+      return timeA - timeB;
+    });
+    res
+      .status(200)
+      .json({ groupChat: sortedChat, loggedInUser: req.user.userName });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
