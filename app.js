@@ -26,6 +26,10 @@ io.on("connect", (socket) => {
   socket.on("leave-group", (groupId) => {
     socket.leave(groupId);
   });
+
+  socket.on("uploadFile", (data, groupId) => {
+    io.to(groupId).emit("fileShared", data, groupId);
+  });
 });
 
 const userRoutes = require("./routes/users");
@@ -33,12 +37,14 @@ const passwordRoutes = require("./routes/password");
 const groupRoutes = require("./routes/groups");
 const adminRoutes = require("./routes/admin");
 const messageRoutes = require("./routes/messages");
+const attachmentRoutes = require("./routes/attachments");
 
 app.use("/user", userRoutes);
 app.use("/password", passwordRoutes);
 app.use("/group", groupRoutes);
 app.use("/admin", adminRoutes);
 app.use("/message", messageRoutes);
+app.use("/attachment", attachmentRoutes);
 
 const Users = require("./models/users");
 const passwordRequests = require("./models/passwordRequests");

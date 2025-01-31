@@ -91,6 +91,7 @@ function renderGroups(groupNames) {
     groupItem.classList.add("group-item");
     groupItem.textContent = groupName;
     groupItem.addEventListener("click", async () => {
+      document.getElementById("send-value-container").style.display = "flex";
       document.getElementById("chat-name").textContent = groupName;
       document.getElementById("chat-name").dataset.groupId = groupId;
       const adminResponse = await axios.get(
@@ -322,18 +323,132 @@ function renderGroupChat(data, loggedInUser) {
     } else {
       messageElement.classList.add("received");
     }
-
-    messageElement.innerHTML = `
+    const fileKeyPattern = /^[a-zA-Z0-9_-]+\.[a-zA-Z0-9]+$/;
+    if (fileKeyPattern.test(msg.message)) {
+      messageElement.innerHTML = `
+      <p class="sender">${msg.userName}</p>
+      <button  id="${msg.message}" onclick="downloadFile('${msg.message}')" class="multimedia-chat">sent a file</button>
+    `;
+    } else {
+      messageElement.innerHTML = `
       <p class="sender">${msg.userName}</p>
       <p class="text">${msg.message}</p>
     `;
-
+    }
     chatContent.appendChild(messageElement);
   });
 
   chatContent.scrollTop = chatContent.scrollHeight;
 }
 
+document.getElementById("send-file-btn").addEventListener("click", () => {
+  document.getElementById("send-file-modal").style.display = "flex";
+});
+
+document
+  .querySelector(".close-send-file-modal")
+  .addEventListener("click", () => {
+    document.getElementById("send-file-modal").style.display = "none";
+  });
+
+document
+  .getElementById("upload-file-btn")
+  .addEventListener("click", async () => {
+    const fileInput = document.querySelector(`.attachments-input`);
+    if (!fileInput || fileInput.files.length === 0) {
+      alert("Please select files to upload.");
+      return;
+    }
+    const file = fileInput.files[0];
+    const formData = new FormData();
+    const groupId = getSelectedGroupId();
+    formData.append("file", file);
+    formData.append("loggedInUser", localStorage.getItem("loggedInUser"));
+    formData.append("groupId", groupId);
+
+    try {
+      const response = await axios.post(
+        `http://localhost:3000/attachment/upload`,
+        formData,
+        {
+          headers: {
+            "Content-Type": "multipart/form-data",
+            Authorization: token,
+          },
+        }
+      );
+      const groupId = getSelectedGroupId();
+      const data = {
+        fileUrl: response.data.fileUrl,
+        fileKey: response.data.fileKey,
+        sender: localStorage.getItem("loggedInUser"),
+      };
+      socket.emit("uploadFile", data, groupId);
+      alert("File sent successfully!");
+      document.getElementById("send-file-modal").style.display = "none";
+    } catch (error) {
+      console.error("Error uploading file:", error);
+      alert("Upload failed.");
+    }
+  });
+
 socket.on("receive-chat", (message, groupId, sender) => {
   displayNewMessage(message, groupId, sender);
 });
+
+socket.on("fileShared", (data, groupId) => {
+  displayNewFile(data);
+});
+
+function displayNewFile(data) {
+  const loggedInUser = localStorage.getItem("loggedInUser");
+  const chatContent = document.getElementById("chat-content");
+  const messageElement = document.createElement("div");
+  messageElement.classList.add("message");
+  console.log("display newFile", data);
+  if (data.sender === loggedInUser) {
+    messageElement.classList.add("sent");
+  } else {
+    messageElement.classList.add("received");
+  }
+
+  messageElement.innerHTML = `
+  <p class="sender">${data.sender}</p>
+  <button  id="${data.fileKey}" onclick="downloadFile('${data.fileKey}')" class="multimedia-chat">sent a file</button>
+`;
+
+  chatContent.appendChild(messageElement);
+}
+
+async function downloadFile(fileKey) {
+  console.log("att id in download", fileKey);
+  try {
+    const downloadResponse = await axios.get(
+      `http://localhost:3000/attachment/download/${fileKey}`,
+      { headers: { Authorization: token }, responseType: "blob" }
+    );
+    const url = window.URL.createObjectURL(new Blob([downloadResponse.data]));
+
+    const link = document.createElement("a");
+    link.href = url;
+
+    const contentDisposition = downloadResponse.headers["content-disposition"];
+    let fileName = fileKey;
+    if (contentDisposition) {
+      const matches = contentDisposition.match(/filename="?(.+?)"?$/);
+      if (matches && matches[1]) {
+        fileName = matches[1];
+      }
+    }
+
+    link.setAttribute("download", fileName);
+    document.body.appendChild(link);
+    link.click();
+
+    link.remove();
+    window.URL.revokeObjectURL(url);
+  } catch (error) {
+    console.error("Error downloading file:", error);
+    alert("Failed to download file.");
+  }
+}
